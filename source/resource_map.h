@@ -43,7 +43,7 @@
 #define RESOURCE_MAP_H_
 #include "cybsp.h"
 
-#ifdef TARGET_CYSBSYSKIT_DEV_01
+#ifdef TARGET_APP_CYSBSYSKIT_DEV_01
 
 #define LED_RGB_RED                         CYBSP_GPIOA0
 #define LED_RGB_GREEN                       CYBSP_GPIOA1
@@ -59,7 +59,7 @@
 
 #endif
 
-#ifdef TARGET_KIT_BGT60TR13C_EMBEDD
+#ifdef TARGET_APP_KIT_BGT60TR13C_EMBEDD
 
 #define LED_RGB_RED                         CYBSP_LED_RGB_RED
 #define LED_RGB_GREEN                       CYBSP_LED_RGB_GREEN

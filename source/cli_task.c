@@ -54,12 +54,12 @@
 #define MAX_RANGE_MAX_LIMIT (5.0f)
 
 /* Macro threshold min - max */
-#define MACRO_THRESHOLD_MIN_LIMIT (0.1f)
-#define MACRO_THRESHOLD_MAX_LIMIT (100.0f)
+#define MACRO_THRESHOLD_MIN_LIMIT (0.5f)
+#define MACRO_THRESHOLD_MAX_LIMIT (2.0f)
 
 /* Micro threshold min - max */
 #define MICRO_THRESHOLD_MIN_LIMIT (0.2f)
-#define MICRO_THRESHOLD_MAX_LIMIT (99.0f)
+#define MICRO_THRESHOLD_MAX_LIMIT (50.0f)
 
 /* Names for presence mode */
 #define MACRO_ONLY_STRING      ("macro_only")
@@ -110,12 +110,12 @@ static const CLI_Command_Definition_t command_list[NUMBER_OF_COMMANDS] =
                         .cExpectedNumberOfParameters = 1 },
                 { .pcCommand = "set_macro_threshold",
                         .pcHelpString =
-                                "set_macro_threshold <value> - Sets macro threshold for presence algorithm. Range <0.1-100.0>\n",
+                                "set_macro_threshold <value> - Sets macro threshold for presence algorithm. Range <0.5-2.0>\n",
                         .pxCommandInterpreter = set_macro_threshold,
                         .cExpectedNumberOfParameters = 1 },
                 { .pcCommand = "set_micro_threshold",
                         .pcHelpString =
-                                "set_micro_threshold <value> - Sets micro threshold for presence algorithm. Range <0.2-99.0>\n",
+                                "set_micro_threshold <value> - Sets micro threshold for presence algorithm. Range <0.2-50.0>\n",
                         .pxCommandInterpreter = set_micro_threshold,
                         .cExpectedNumberOfParameters = 1 },
                 { .pcCommand = "bandpass_filter",

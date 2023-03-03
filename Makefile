@@ -7,7 +7,7 @@
 #
 ################################################################################
 # \copyright
-# Copyright 2018-2022, Cypress Semiconductor Corporation (an Infineon company)
+# Copyright 2018-2023, Cypress Semiconductor Corporation (an Infineon company)
 # SPDX-License-Identifier: Apache-2.0
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,11 +28,11 @@
 # Basic Configuration
 ################################################################################
 
-#Type of ModusToolbox Makefile Options include:
+# Type of ModusToolbox Makefile Options include:
 #
-#COMBINED    -- Top Level Makefile usually for single standalone application
-#APPLICATION -- Top Level Makefile usually for multi project application
-#PROJECT     -- Project Makefile under Application
+# COMBINED    -- Top Level Makefile usually for single standalone application
+# APPLICATION -- Top Level Makefile usually for multi project application
+# PROJECT     -- Project Makefile under Application
 #
 MTB_TYPE=COMBINED
 

@@ -5,13 +5,13 @@ This code example demonstrates Infineon's radar presence solution to detect huma
 
 [View this README on GitHub.](https://github.com/Infineon/mtb-example-psoc6-radar-presence)
 
-[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyMzYwNTciLCJTcGVjIE51bWJlciI6IjAwMi0zNjA1NyIsIkRvYyBUaXRsZSI6IlBTb0MmdHJhZGU7IDYgTUNVIDogSHVtYW4gcHJlc2VuY2UgZGV0ZWN0aW9uIiwicmlkIjoidXNtYW5tdWgiLCJEb2MgdmVyc2lvbiI6IjAuNS4xIiwiRG9jIExhbmd1YWdlIjoiRW5nbGlzaCIsIkRvYyBEaXZpc2lvbiI6Ik1DRCIsIkRvYyBCVSI6IlNCU1lTIiwiRG9jIEZhbWlseSI6IlNVQlNZUyJ9)
+[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyMzYwNTciLCJTcGVjIE51bWJlciI6IjAwMi0zNjA1NyIsIkRvYyBUaXRsZSI6IlBTb0MmdHJhZGU7IDYgTUNVIDogSHVtYW4gcHJlc2VuY2UgZGV0ZWN0aW9uIiwicmlkIjoidXNtYW5tdWgiLCJEb2MgdmVyc2lvbiI6IjEuMC4wIiwiRG9jIExhbmd1YWdlIjoiRW5nbGlzaCIsIkRvYyBEaXZpc2lvbiI6Ik1DRCIsIkRvYyBCVSI6IlNCU1lTIiwiRG9jIEZhbWlseSI6IlBTT0MifQ==)
 
 ## Requirements
 
 
-- [ModusToolbox&trade; software](https://www.infineon.com/cms/en/design-support/tools/sdk/modustoolbox-software/) v2.4 or later (tested with v2.4)
-- Board support package (BSP) minimum required version: 3.0.0
+- [ModusToolbox&trade; software](https://www.infineon.com/cms/en/design-support/tools/sdk/modustoolbox-software/) v3.0
+- Board support package (BSP) minimum required version: 4.0.0
 - Programming language: C
 - Associated parts: All [PSoC&trade; 6 MCU](https://www.infineon.com/cms/en/product/microcontroller/32-bit-psoc-arm-cortex-microcontroller/psoc-6-32-bit-arm-cortex-m4-mcu/) parts
 
@@ -76,7 +76,7 @@ Create the project and open it using one of the following:
 
 1. Click the **New Application** link in the **Quick Panel** (or, use **File** > **New** > **ModusToolbox&trade; Application**). This launches the [Project Creator](https://www.infineon.com/ModusToolboxProjectCreator) tool.
 
-2. Pick a kit supported by the code example from the list shown in the **Project Creator - Choose Board Support Package (BSP)** dialog.
+2. Select CYSBSYSKIT-DEV-01 kit supported by the code example from the PSoC&trade; 6 BSPs list shown in the **Project Creator - Choose Board Support Package (BSP)** dialog.
 
    When you select a supported kit, the example is reconfigured automatically to work with the kit. To work with a different supported kit later, use the [Library Manager](https://www.infineon.com/ModusToolboxLibraryManager) to choose the BSP for the supported kit. You can use the Library Manager to select or update the BSP and firmware libraries used in this application. To access the Library Manager, click the link from the **Quick Panel**.
 
@@ -84,7 +84,9 @@ Create the project and open it using one of the following:
 
    If you want to use the application for a kit not listed here, you may need to update the source files. If the kit does not have the required resources, the application may not work.
 
-3. In the **Project Creator - Select Application** dialog, choose the example by enabling the checkbox.
+3. In the **Project Creator - Select Application** dialog, choose the **Human Presence Detection** from Sensing group by enabling the checkbox.
+
+   **Note:** Please do not confuse this code example with old "Radar Presence Application" located in the same group. This document refers to      **Human Presence Detection** only. 
 
 4. (Optional) Change the suggested **New Application Name**.
 
@@ -113,10 +115,10 @@ Argument | Description | Required/optional
 
 <br />
 
-The following example will clone the "[Hello world](https://github.com/Infineon/mtb-example-psoc6-hello-world)" application with the desired name "MyHelloWorld" configured for the *CY8CKIT-062-WIFI-BT* BSP into the specified working directory, *C:/mtb_projects*:
+The following example will clone the "[Human Presence Detection](https://github.com/Infineon/mtb-example-psoc6-radar-presence)" application with the desired name "HumanPresenceDetection" configured for the *CYSBSYSKIT-DEV-01* BSP into the specified working directory, *C:/mtb_projects*:
 
    ```
-   project-creator-cli --board-id CY8CKIT-062-WIFI-BT --app-id mtb-example-psoc6-hello-world --user-app-name MyHelloWorld --target-dir "C:/mtb_projects"
+   project-creator-cli --board-id CYSBSYSKIT-DEV-01 --app-id mtb-example-psoc6-radar-presence --user-app-name HumanPresenceDetection --target-dir "C:/mtb_projects"
    ```
 
 **Note:** The project-creator-cli tool uses the `git clone` and `make getlibs` commands to fetch the repository and import the required libraries. For details, see the "Project creator tools" section of the [ModusToolbox&trade; software user guide](https://www.infineon.com/ModusToolboxUserGuide) (locally available at *{ModusToolbox&trade; software install directory}/docs_{version}/mtb_user_guide.pdf*).
@@ -151,13 +153,14 @@ For a list of supported IDEs and more details, see the "Exporting to IDEs" secti
 
 </details>
 
+**Note:** To use this code example in ModusToolbox v2.4, please refer to [Infineon-XENSIVTM_KIT_CSK_BGT60TR13C-UserGuide](https://www.infineon.com/cms/en/product/evaluation-boards/kit_csk_bgt60tr13c/#!documents) 
 
 ## Operation
 
 
 1. Mount radar wing board on the CYSBSYSKIT-DEV-01 kit and connect the board to your PC using the provided USB cable through the KitProg3 USB connector.
 
-2. Open a terminal program and select the KitProg3 COM port. Set the serial port parameters to 8N1 and 115200 baud.
+2. Open a terminal program and select the [KitProg3](https://www.infineon.com/dgdl/Infineon-KitProg3_User_Guide-UserManual-v01_00-EN.pdf?fileId=8ac78c8c7d0d8da4017d0f01221f1853)  COM port. Set the serial port parameters to 8N1 and 115200 baud.
 
 3. Program the board using one of the following:
 
@@ -177,7 +180,7 @@ For a list of supported IDEs and more details, see the "Exporting to IDEs" secti
 
       Example:
       ```
-      make program TARGET=CY8CPROTO-062-4343W TOOLCHAIN=GCC_ARM
+      make program TARGET=CYSBSYSKIT-DEV-01 TOOLCHAIN=GCC_ARM
       ```
    </details>
 
@@ -227,13 +230,26 @@ For a list of supported IDEs and more details, see the "Exporting to IDEs" secti
 
 </details>
 
-4. After programming, the application starts automatically. Confirm that "Presence application using XENSIV 60-GHz radar" is displayed on the UART terminal.
+4. After programming, the application starts automatically. Confirm that "Human presence detection using XENSIV 60-GHz radar" is displayed on the UART terminal.
 
    **Figure 7. Terminal output on program startup**
 
    ![](images/terminal-presence.png)
 
-
+   **Table 1. Terminal output discription**
+    | parameters  |  Event type  |  Description  |
+   | ----------- | ----------- | -----    |
+   | Radar State | macro presence  | Presence event detected.
+   | Range bin  | 2 | maximum range bin 
+   | Time stamp | '4298' | relative time in ms 
+   
+   **Note:**
+   **Time Stamp** is relative to the boot time. This means when application first boot, the time counting starts from 0 ms.
+   **Converstion of range bin to range in meters can be done by using following relation:**
+    R (range in meters) = ( xensiv_radar_presence_get_bin_length() * config.max_range_bin )
+   **eg: if xensiv_radar_presence_get_bin_length()=0.325**
+   then **R=0.325 * 2 =0.66m**
+   
 5. Confirm that the kit LED blinks at approximately 1 Hz.
 
  The presence information is  provided either as macro or micro presence which can be seen either through prints on the terminal and also  the onboard LED turns red which indicates radar detected a target. And when the target leaves the detection zone, the terminal prints a absence message and LED turns green. 
@@ -245,7 +261,7 @@ Please note that there is no user LED for KIT-BGT60TR13C-EMBEDD board.
  
 2. The LED indicates different events with different colors as follows:
 
-    **Table 1. Events and LED indication**
+    **Table 2. Events and LED indication**
 
    | LED color  |  Event type  |  Description  |
    | ----------- | ----------- | -----    |
@@ -266,20 +282,29 @@ You can configure the application parameters using the options provided on the t
 
    The complete list of configurable paramters with the valid values are shown in **Table 2**:
 
-   **Table 2. Presence algortihm configuration parameters**
+   **Table 3. Presence algortihm configuration parameters**
 
    | Key |  Default value  |  Valid Values  |
    | ----------- | ----------- | -----    |
    | set_max_range (m)| 2.0 | 0.66-5.0 | 
-   | set_macro_threshold | 0.5 | 0.1-100.0 |
-   | set_micro_threshold | 12.5 | 0.2-99.0 | 
+   | set_macro_threshold | 0.5 | 0.5-2.0 |
+   | set_micro_threshold | 12.5 | 0.2-50.0 | 
    | bandpass_filter | disable | enable/disable|
    | decimation_filter | disable | enable/disable | 
    | set_mode | micro_if_macro | macro_only/micro_only/micro_if_macro/micro_and_macro |
    
-    Macro and Micro threshold parameters can be adjusted to achieve different level of sensitivity.The  below table summarises three different levels (for instance high means -solution being more sensitive to stationary peoples )
+   **Micro-motions**:
+    Detecting small movements like fingure gestures or small headmovements in  a typical smart home environment for instance while working on lapop/keyboard.Micromotion also includes  detection of Stationary humans (normally breathing and blinking eyes) in sitting or standing positions (in line of sight).
+   
+
+   **Macro-motions**:
+    Detecting major movements into or through the field of view.(Motion Detection).
+
+
+
+   **Note**: Macro and Micro threshold parameters can be adjusted to achieve different levels of sensitivity.The  below table summarises three different levels (for instance high means  -solution being more sensitive to stationary peoples).
     
-   **Table 3. Senstivity level with the corresponding threshold setting**
+   **Table 4. Senstivity level with the corresponding threshold setting**
    | Sensitivity|Macro_threshold_value |Micro_threshold_value|
    | ----------- | ----------- | -----    
    | High| 0.5 | 12.5 |
@@ -316,7 +341,7 @@ The user can also view the radar raw data and the presence library configuration
 ![](images/system-flow.png)
 
 
-**Table 4. Application resources**
+**Table 5. Application resources**
 
  Resource  |  Alias/object     |    Purpose
  :-------- | :-------------    | :------------
@@ -359,6 +384,7 @@ Document title: *CE236057* – *PSoC&trade; 6 MCU : Human presence detection*
  Version | Description of change
  ------- | ---------------------
  0.5.1   | New code example
+ 1.0.0   | Major update to support ModusToolbox&trade; software v3.0 <br /> CE will not be backward compatible with previous versions of ModusToolbox&trade; software 
 <br />
 
 
