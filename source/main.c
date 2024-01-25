@@ -1,44 +1,26 @@
-/******************************************************************************
-* File Name:   main.c
-*
-* Description: This is the source code for the <CE Title> Example
-*              for ModusToolbox.
-*
-* Related Document: See README.md
-*
-*
-*******************************************************************************
-* Copyright 2022-2023, Cypress Semiconductor Corporation (an Infineon company) or
-* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
-*
-* This software, including source code, documentation and related
-* materials ("Software") is owned by Cypress Semiconductor Corporation
-* or one of its affiliates ("Cypress") and is protected by and subject to
-* worldwide patent protection (United States and foreign),
-* United States copyright laws and international treaty provisions.
-* Therefore, you may use this Software only as provided in the license
-* agreement accompanying the software package from which you
-* obtained this Software ("EULA").
-* If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
-* non-transferable license to copy, modify, and compile the Software
-* source code solely for use in connection with Cypress's
-* integrated circuit products.  Any reproduction, modification, translation,
-* compilation, or representation of this Software except as specified
-* above is prohibited without the express written permission of Cypress.
-*
-* Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
-* reserves the right to make changes to the Software without notice. Cypress
-* does not assume any liability arising out of the application or use of the
-* Software or any product or circuit described in the Software. Cypress does
-* not authorize its products for use in any products where a malfunction or
-* failure of the Cypress product may reasonably be expected to result in
-* significant property damage, injury or death ("High Risk Product"). By
-* including Cypress's product in a High Risk Product, the manufacturer
-* of such system or application assumes all risk of such use and in doing
-* so agrees to indemnify Cypress against all liability.
-*******************************************************************************/
+/* ***************************************************************************
+** File name: main.c
+**
+** Description: This is the main file for PSOC6 Radar Presence Code Example.
+**
+** ===========================================================================
+** Copyright (C) 2023 Infineon Technologies AG. All rights reserved.
+** ===========================================================================
+**
+** ===========================================================================
+** Infineon Technologies AG (INFINEON) is supplying this file for use
+** exclusively with Infineon's sensor products. This file can be freely
+** distributed within development tools and software supporting such
+** products.
+**
+** THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
+** OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
+** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
+** INFINEON SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR DIRECT, INDIRECT,
+** INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES, FOR ANY REASON
+** WHATSOEVER.
+** ===========================================================================
+*/
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -57,9 +39,17 @@
 #include "resource_map.h"
 #include "xensiv_bgt60trxx_mtb.h"
 #include "xensiv_radar_presence.h"
+#include "radar_config_optimizer.h"
 
-#define XENSIV_BGT60TRXX_CONF_IMPL
-#include "radar_settings.h"
+#include "radar_low_framerate_config.h"
+
+#include "radar_high_framerate_config.h"
+
+#define XENSIV_RADAR_PRESENCE_SETTINGS_H_IMPL
+#include "presence_settings.h"
+
+#include "xensiv_radar_data_management.h"
+#include "optimization_list.h"
 
 /*******************************************************************************
 * Macros
@@ -67,26 +57,19 @@
 
 #define XENSIV_BGT60TRXX_SPI_FREQUENCY      (25000000UL)
 
-#define NUM_SAMPLES_PER_FRAME               (XENSIV_BGT60TRXX_CONF_NUM_SAMPLES_PER_CHIRP *\
-                                             XENSIV_BGT60TRXX_CONF_NUM_CHIRPS_PER_FRAME *\
-                                             XENSIV_BGT60TRXX_CONF_NUM_RX_ANTENNAS)
-
-#define NUM_CHIRPS_PER_FRAME                XENSIV_BGT60TRXX_CONF_NUM_CHIRPS_PER_FRAME
-#define NUM_SAMPLES_PER_CHIRP               XENSIV_BGT60TRXX_CONF_NUM_SAMPLES_PER_CHIRP
-
 /* RTOS tasks */
 #define MAIN_TASK_NAME                      "main_task"
-#define MAIN_TASK_STACK_SIZE                (configMINIMAL_STACK_SIZE * 2)
-#define MAIN_TASK_PRIORITY                  (configMAX_PRIORITIES - 1)
+#define MAIN_TASK_STACK_SIZE                (configMINIMAL_STACK_SIZE * 4)
+#define MAIN_TASK_PRIORITY                  (configMAX_PRIORITIES - 2)
 #define PROCESSING_TASK_NAME                "processing_task"
-#define PROCESSING_TASK_STACK_SIZE          (configMINIMAL_STACK_SIZE * 2)
-#define PROCESSING_TASK_PRIORITY            (configMAX_PRIORITIES - 2)
+#define PROCESSING_TASK_STACK_SIZE          (configMINIMAL_STACK_SIZE * 4)
+#define PROCESSING_TASK_PRIORITY            (configMAX_PRIORITIES - 3)
 #define CLI_TASK_NAME                       "cli_task"
-#define CLI_TASK_STACK_SIZE                 (configMINIMAL_STACK_SIZE * 10)
+#define CLI_TASK_STACK_SIZE                 (configMINIMAL_STACK_SIZE * 20)
 #define CLI_TASK_PRIORITY                   (tskIDLE_PRIORITY)
 
 /* Interrupt priorities */
-#define GPIO_INTERRUPT_PRIORITY             (6)
+#define GPIO_INTERRUPT_PRIORITY             (7)
 
 
 /*******************************************************************************
@@ -98,10 +81,21 @@ static void timer_callbak(TimerHandle_t xTimer);
 
 static int32_t init_leds(void);
 static int32_t init_sensor(void);
+static void process_verbose_cmd(xensiv_radar_presence_handle_t handle, XENSIV_RADAR_PRESENCE_TIMESTAMP time_ms);
 static void xensiv_bgt60trxx_interrupt_handler(void* args, cyhal_gpio_event_t event);
 void presence_detection_cb(xensiv_radar_presence_handle_t handle,
                            const xensiv_radar_presence_event_t* event,
                            void *data);
+
+/*******************************************************************************
+ * Local Declarations
+ ********************************************************************************/
+
+typedef struct {
+    xensiv_radar_presence_event_t last_reported_event;
+    bool verbose;
+    XENSIV_RADAR_PRESENCE_TIMESTAMP bookmark_timestamp;
+}ce_state_s;
 
 
 /*******************************************************************************
@@ -109,19 +103,98 @@ void presence_detection_cb(xensiv_radar_presence_handle_t handle,
 ********************************************************************************/
 static cyhal_spi_t spi_obj;
 static xensiv_bgt60trxx_mtb_t bgt60_obj;
-static uint16_t bgt60_buffer[NUM_SAMPLES_PER_FRAME] __attribute__((aligned(2)));
-static float32_t frame[NUM_SAMPLES_PER_FRAME];
+static float32_t frame[NUM_SAMPLES_PER_FRAME * 2];
 static float32_t avg_chirp[NUM_SAMPLES_PER_CHIRP];
 
 static TaskHandle_t main_task_handler;
 static TaskHandle_t processing_task_handler;
 static TimerHandle_t timer_handler;
+radar_data_manager_s mgr;
+
+ce_state_s ce_app_state;
+
+volatile bool print_job_locked;
+
+/*******************************************************************************
+* Function Name: read_radar_data
+********************************************************************************
+* Summary:
+* This is the function for reading radar data using buffering
+*
+* Parameters:
+*  * data: pointer to radar data
+*  *num_samples: pointer to number of samples per frame
+*  samples_ub: maximum number of samples to be copied at a time from owner task/caller
+*
+* Return:
+*  int32_t: 0 if success
+*
+*******************************************************************************/
+int32_t read_radar_data(uint16_t* data, uint32_t *num_samples, uint32_t samples_ub)
+{
+    if (xensiv_bgt60trxx_get_fifo_data(&bgt60_obj.dev,
+            data,
+            NUM_SAMPLES_PER_FRAME) == XENSIV_BGT60TRXX_STATUS_OK)
+    {
+        *num_samples = NUM_SAMPLES_PER_FRAME *2; // in bytes
+
+        if (samples_ub < NUM_SAMPLES_PER_FRAME *2)
+        {
+            xensiv_bgt60trxx_soft_reset(&bgt60_obj.dev,XENSIV_BGT60TRXX_RESET_FIFO );
+        }
+    }
+
+    return 0;
+}
+
+/*******************************************************************************
+* Function Name: reconf_radar
+********************************************************************************
+* Summary:
+* This is the function for radar reconfiguration
+*
+* Parameters:
+*  requested: Choosed configuration
+*
+* Return:
+*  void
+*
+*******************************************************************************/
+void reconf_radar(optimization_type_e requested)
+{
+    if (requested == CONFIG_UNINITIALIZED)
+    {
+        return;
+    }
+
+    if (xensiv_bgt60trxx_config(&bgt60_obj.dev,
+            optimizations_list[requested].reg_list,
+            optimizations_list[requested].reg_list_size) != CY_RSLT_SUCCESS)
+    {
+        printf("[MSG] ERROR: xensiv_bgt60trxx reconfiguration failed\n");
+        CY_ASSERT(0);
+    }
+
+    if (xensiv_bgt60trxx_set_fifo_limit(&bgt60_obj.dev,
+            optimizations_list[requested].fifo_limit) != CY_RSLT_SUCCESS)
+    {
+        printf("[MSG] ERROR: xensiv_bgt60trxx set fifo limit failed\n");
+        CY_ASSERT(0);
+    }
+
+    if (xensiv_bgt60trxx_start_frame(&bgt60_obj.dev, true) != CY_RSLT_SUCCESS)
+    {
+        printf("[MSG] ERROR: xensiv_bgt60trxx_start_frame failed\n");
+        CY_ASSERT(0);
+    }
+}
+
 
 /*******************************************************************************
 * Function Name: main
 ********************************************************************************
 * Summary:
-* This is the main function for CM4 CPU. It initializes BSP, creates FreeRTOS  
+* This is the main function for CM4 CPU. It initializes BSP, creates FreeRTOS
 * main task and starts the scheduler.
 *
 * Parameters:
@@ -148,24 +221,26 @@ int main(void)
     /* Initialize retarget-io to use the debug UART port */
     cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE);
 
-#ifdef TARGET_CYSBSYSKIT_DEV_01
+#ifdef TARGET_APP_CYSBSYSKIT_DEV_01
 
     /* Initialize the User LED */
     cyhal_gpio_init(CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF);
 
 #endif
 
+    mgr.in_read_radar_data = read_radar_data;
+    radar_data_manager_init(&mgr, NUM_SAMPLES_PER_FRAME *6, NUM_SAMPLES_PER_FRAME *2);
+    radar_data_manager_set_malloc_free(pvPortMalloc,
+            vPortFree);
+
     /* \x1b[2J\x1b[;H - ANSI ESC sequence for clear screen */
     printf("\x1b[2J\x1b[;H");
-
     printf("****************** "
            "Radar presence"
            "****************** \r\n\n"
            "Human presence detection using XENSIV 60-GHz radar\r\n"
            );
-
     printf("Press ENTER to enter setup mode, press ESC to quit setup mode \r\n");
-       
 
     /* Create the RTOS task */
     if (xTaskCreate(main_task, MAIN_TASK_NAME, MAIN_TASK_STACK_SIZE, NULL, MAIN_TASK_PRIORITY, &main_task_handler) != pdPASS)
@@ -201,6 +276,10 @@ int main(void)
 static __NO_RETURN void main_task(void *pvParameters)
 {
     (void)pvParameters;
+    uint32_t sz;
+    uint16_t *data_buff = NULL;
+    cy_rslt_t result;
+    XENSIV_RADAR_PRESENCE_TIMESTAMP last_timestamp = 0;
 
     timer_handler = xTimerCreate("timer", pdMS_TO_TICKS(1000), pdTRUE, NULL, timer_callbak);    
     if (timer_handler == NULL)
@@ -228,6 +307,12 @@ static __NO_RETURN void main_task(void *pvParameters)
         CY_ASSERT(0);
     }
 
+    mgr.subscribe(main_task_handler);
+
+    /* Initialize the initial state of ce_app_state */
+    ce_app_state.last_reported_event.state = XENSIV_RADAR_PRESENCE_STATE_ABSENCE;
+    ce_app_state.last_reported_event.range_bin = 0;
+    ce_app_state.last_reported_event.timestamp = 0;
 
     if (xensiv_bgt60trxx_start_frame(&bgt60_obj.dev, true) != XENSIV_BGT60TRXX_STATUS_OK)
     {
@@ -238,36 +323,44 @@ static __NO_RETURN void main_task(void *pvParameters)
     {
         /* Wait for the GPIO interrupt to indicate that another slice is available */
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        mgr.read_from_buffer(1, &data_buff, &sz);
 
-        if (xensiv_bgt60trxx_get_fifo_data(&bgt60_obj.dev, 
-                                           bgt60_buffer,
-                                           NUM_SAMPLES_PER_FRAME) == XENSIV_BGT60TRXX_STATUS_OK)
+        /* Data preprocessing */
+        uint16_t *bgt60_buffer_ptr = data_buff;
+        float32_t *frame_ptr = &frame[0];
+        for (int32_t sample = 0; sample < NUM_SAMPLES_PER_FRAME * 2; ++sample)
         {
-            /* Data preprocessing */
-            uint16_t *bgt60_buffer_ptr = &bgt60_buffer[0];
-            float32_t *frame_ptr = &frame[0];
-            for (int32_t sample = 0; sample < NUM_SAMPLES_PER_FRAME; ++sample)
-            {
-                *frame_ptr++ = ((float32_t)(*bgt60_buffer_ptr++) / 4096.0F);
-            }
-
-            // calculate the average of the chirps first
-            arm_fill_f32(0, avg_chirp, NUM_SAMPLES_PER_CHIRP);
-
-            for (int chirp = 0; chirp < NUM_CHIRPS_PER_FRAME; chirp++)
-            {
-                arm_add_f32(avg_chirp, &frame[NUM_SAMPLES_PER_CHIRP * chirp], avg_chirp, NUM_SAMPLES_PER_CHIRP);
-            }
-
-            arm_scale_f32(avg_chirp, 1.0f / NUM_CHIRPS_PER_FRAME, avg_chirp, NUM_SAMPLES_PER_CHIRP);
-
-
-            /* Tell processing task to take over */
-            xTaskNotifyGive(processing_task_handler);
+            *frame_ptr++ = ((float32_t)(*bgt60_buffer_ptr++) / 4096.0F);
         }
+
+        mgr.ack_data_read(1);
+
+        /* calculate the average of the chirps first */
+        arm_fill_f32(0, avg_chirp, NUM_SAMPLES_PER_CHIRP);
+
+        for (int chirp = 0; chirp < NUM_CHIRPS_PER_FRAME * 2; chirp++)
+        {
+            arm_add_f32(avg_chirp, &frame[NUM_SAMPLES_PER_CHIRP * chirp], avg_chirp, NUM_SAMPLES_PER_CHIRP);
+        }
+
+        arm_scale_f32(avg_chirp, 1.0f / NUM_CHIRPS_PER_FRAME, avg_chirp, NUM_SAMPLES_PER_CHIRP);
+
+        if(ce_app_state.last_reported_event.timestamp != last_timestamp)
+        {
+            last_timestamp = ce_app_state.last_reported_event.timestamp; // save latest timestamp
+            result = radar_config_optimize(ce_app_state.last_reported_event.state);
+            if(result != ESTATUS_SUCCESS)
+            {
+                printf("[MSG] ERROR: radar_config_optimize failed with error %" PRIi32 "\n", result);
+                CY_ASSERT(0);
+            }
+        }
+
+        /* Tell processing task to take over */
+        xTaskNotifyGive(processing_task_handler);
+
     }
 }
-
 
 /*******************************************************************************
 * Function Name: processing_task
@@ -291,27 +384,8 @@ static __NO_RETURN void processing_task(void *pvParameters)
 {
     (void)pvParameters;
 
-    static const xensiv_radar_presence_config_t default_config =
-    {
-        .bandwidth                         = 460E6,
-        .num_samples_per_chirp             = XENSIV_BGT60TRXX_CONF_NUM_SAMPLES_PER_CHIRP,
-        .micro_fft_decimation_enabled      = false,
-        .micro_fft_size                    = 128,
-        .macro_threshold                   = 0.5f,
-        .micro_threshold                   = 12.5f,
-        .min_range_bin                     = 1,
-        .max_range_bin                     = 5,
-        .macro_compare_interval_ms         = 250,
-        .macro_movement_validity_ms        = 1000,
-        .micro_movement_validity_ms        = 4000,
-        .macro_movement_confirmations      = 0,
-        .macro_trigger_range               = 1,
-        .mode                              = XENSIV_RADAR_PRESENCE_MODE_MICRO_IF_MACRO,
-        .macro_fft_bandpass_filter_enabled = false,
-        .micro_movement_compare_idx       = 5
-    };
-
     xensiv_radar_presence_handle_t handle;
+    cy_rslt_t result;
 
     xensiv_radar_presence_set_malloc_free(pvPortMalloc,
                                           vPortFree);
@@ -322,6 +396,21 @@ static __NO_RETURN void processing_task(void *pvParameters)
     }
 
     xensiv_radar_presence_set_callback(handle, presence_detection_cb, NULL);
+    result = radar_config_optimizer_init(reconf_radar);
+
+    if(result != ESTATUS_SUCCESS)
+    {
+        printf("[MSG] ERROR: radar_config_optimizer_init failed with error %" PRIi32 "\n", result);
+        CY_ASSERT(0);
+    }
+
+    result = radar_config_optimizer_set_operational_mode(default_config.mode);
+
+    if(result != ESTATUS_SUCCESS)
+    {
+        printf("[MSG] ERROR: radar_config_optimizer_set_operational_mode failed with error %" PRIi32 "\n", result);
+        CY_ASSERT(0);
+    }
 
     if (xTaskCreate(console_task, CLI_TASK_NAME, CLI_TASK_STACK_SIZE, handle, CLI_TASK_PRIORITY, NULL) != pdPASS)
     {
@@ -332,7 +421,8 @@ static __NO_RETURN void processing_task(void *pvParameters)
     {
         /* Wait for frame data available to process */
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        xensiv_radar_presence_process_frame(handle, frame, xTaskGetTickCount() * portTICK_PERIOD_MS);
+        xensiv_radar_presence_process_frame(handle, avg_chirp, xTaskGetTickCount() * portTICK_PERIOD_MS);
+        process_verbose_cmd(handle, xTaskGetTickCount() * portTICK_PERIOD_MS);
     }
 }
 
@@ -357,34 +447,41 @@ void presence_detection_cb(xensiv_radar_presence_handle_t handle,
     (void)handle;
     (void)data;
 
-    switch (event->state)
+    if (!ce_app_state.verbose)
     {
-        case XENSIV_RADAR_PRESENCE_STATE_MACRO_PRESENCE:
-            cyhal_gpio_write(LED_RGB_RED, true);
-            cyhal_gpio_write(LED_RGB_GREEN, false);
-            printf("[INFO] macro presence %" PRIi32 " %" PRIi32 "\n",
-                   event->range_bin,
-                   event->timestamp);
-            break;
+        switch (event->state)
+        {
+            case XENSIV_RADAR_PRESENCE_STATE_MACRO_PRESENCE:
+                cyhal_gpio_write(LED_RGB_RED, true);
+                cyhal_gpio_write(LED_RGB_GREEN, false);
+                printf("[INFO] macro presence %" PRIi32 " %" PRIi32 "\n",
+                        event->range_bin,
+                        event->timestamp);
+                break;
 
-        case XENSIV_RADAR_PRESENCE_STATE_MICRO_PRESENCE:
-            cyhal_gpio_write(LED_RGB_RED, true);
-            cyhal_gpio_write(LED_RGB_GREEN, false);
-            printf("[INFO] micro presence %" PRIi32 " %" PRIi32 "\n",
-                   event->range_bin,
-                   event->timestamp);
-            break;
+            case XENSIV_RADAR_PRESENCE_STATE_MICRO_PRESENCE:
+                cyhal_gpio_write(LED_RGB_RED, true);
+                cyhal_gpio_write(LED_RGB_GREEN, false);
+                printf("[INFO] micro presence %" PRIi32 " %" PRIi32 "\n",
+                        event->range_bin,
+                        event->timestamp);
+                break;
 
-        case XENSIV_RADAR_PRESENCE_STATE_ABSENCE:
-            printf("[INFO] absence %" PRIu32 "\n", event->timestamp);
-            cyhal_gpio_write(LED_RGB_RED, false);
-            cyhal_gpio_write(LED_RGB_GREEN, true);
-            break;
+            case XENSIV_RADAR_PRESENCE_STATE_ABSENCE:
+                printf("[INFO] absence %" PRIu32 "\n", event->timestamp);
+                cyhal_gpio_write(LED_RGB_RED, false);
+                cyhal_gpio_write(LED_RGB_GREEN, true);
+                break;
 
-        default:
-            printf("[WARN]: Unknown reported state in event handling\n");
-            break;
+            default:
+                printf("[MSG] ERROR: Unknown reported state in event handling\n");
+                break;
+        }
+
     }
+
+    /* save the last reported event state */
+    ce_app_state.last_reported_event = *event;
 }
 
 
@@ -414,7 +511,7 @@ static int32_t init_sensor(void)
                        CYHAL_SPI_MODE_00_MSB,
                        false) != CY_RSLT_SUCCESS)
     {
-        printf("ERROR: cyhal_spi_init failed\n");
+        printf("[MSG] ERROR: cyhal_spi_init failed\n");
         return -1;
     }
 
@@ -427,7 +524,7 @@ static int32_t init_sensor(void)
     /* Set the data rate to 25 Mbps */
     if (cyhal_spi_set_frequency(&spi_obj, XENSIV_BGT60TRXX_SPI_FREQUENCY) != CY_RSLT_SUCCESS)
     {
-        printf("ERROR: cyhal_spi_set_frequency failed\n");
+        printf("[MSG] ERROR: cyhal_spi_set_frequency failed\n");
         return -1;
     }
 
@@ -437,7 +534,7 @@ static int32_t init_sensor(void)
                         CYHAL_GPIO_DRIVE_STRONG,
                         true) != CY_RSLT_SUCCESS)
     {
-        printf("ERROR: LDO_EN cyhal_gpio_init failed\n");
+        printf("[MSG] ERROR: LDO_EN cyhal_gpio_init failed\n");
         return -1;
     }
 
@@ -448,21 +545,21 @@ static int32_t init_sensor(void)
                                   &spi_obj, 
                                   PIN_XENSIV_BGT60TRXX_SPI_CSN, 
                                   PIN_XENSIV_BGT60TRXX_RSTN, 
-                                  register_list, 
-                                  XENSIV_BGT60TRXX_CONF_NUM_REGS) != CY_RSLT_SUCCESS)
+                                  register_list_micro_only, // default config with macro settings
+                                  XENSIV_BGT60TRXX_CONF_NUM_REGS_MACRO) != CY_RSLT_SUCCESS)
     {
-        printf("ERROR: xensiv_bgt60trxx_mtb_init failed\n");
+        printf("[MSG] ERROR: xensiv_bgt60trxx_mtb_init failed\n");
         return -1;
     }
 
     if (xensiv_bgt60trxx_mtb_interrupt_init(&bgt60_obj,
-                                            NUM_SAMPLES_PER_FRAME,
+                                            NUM_SAMPLES_PER_FRAME*2,
                                             PIN_XENSIV_BGT60TRXX_IRQ,
                                             GPIO_INTERRUPT_PRIORITY,
                                             xensiv_bgt60trxx_interrupt_handler,
                                             NULL) != CY_RSLT_SUCCESS)
     {
-        printf("ERROR: xensiv_bgt60trxx_mtb_interrupt_init failed\n");
+        printf("[MSG] ERROR: xensiv_bgt60trxx_mtb_interrupt_init failed\n");
         return -1;
     }
 
@@ -494,12 +591,7 @@ static void xensiv_bgt60trxx_interrupt_handler(void *args, cyhal_gpio_irq_event_
     CY_UNUSED_PARAMETER(args);
     CY_UNUSED_PARAMETER(event);
 
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    vTaskNotifyGiveFromISR(main_task_handler, &xHigherPriorityTaskWoken);
-
-    /* Context switch needed? */
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    mgr.run(true);
 }
 
 
@@ -520,23 +612,107 @@ static int32_t init_leds(void)
 
     if(cyhal_gpio_init(LED_RGB_RED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
     {
-        printf("ERROR: GPIO initialization for LED_RGB_RED failed\n");
+        printf("[MSG] ERROR: GPIO initialization for LED_RGB_RED failed\n");
         return -1;
     }
 
     if( cyhal_gpio_init(LED_RGB_GREEN, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
     {
-        printf("ERROR: GPIO initialization for LED_RGB_GREEN failed\n");
+        printf("[MSG] ERROR: GPIO initialization for LED_RGB_GREEN failed\n");
         return -1;
     }
-    
+
     if( cyhal_gpio_init(LED_RGB_BLUE, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
     {
-        printf("ERROR: GPIO initialization for LED_RGB_BLUE failed\n");
+        printf("[MSG] ERROR: GPIO initialization for LED_RGB_BLUE failed\n");
         return -1;
     }
 
     return 0;
+}
+
+
+/*******************************************************************************
+ * Function Name: process_verbose_cmd
+ ********************************************************************************
+ * Summary:
+ * This function processes the prints the desired output on CLI provided
+ * user has set the "verbose enabled" through Cli task.
+ *
+ * Parameters:
+ *  void
+ *
+ * Return:
+ *  none
+ *
+ *******************************************************************************/
+void process_verbose_cmd(xensiv_radar_presence_handle_t handle,
+        XENSIV_RADAR_PRESENCE_TIMESTAMP time_ms)
+{
+    float32_t energy = 0;
+    int range_bin = 0;
+
+    if (ce_app_state.verbose == false)
+    {
+        return;
+    }
+
+    if (ce_app_state.bookmark_timestamp + 1000 <= time_ms)
+    {
+        print_job_locked = true;
+
+        switch (ce_app_state.last_reported_event.state)
+        {
+            case XENSIV_RADAR_PRESENCE_STATE_MACRO_PRESENCE:
+                cyhal_gpio_write(LED_RGB_RED, true);
+                cyhal_gpio_write(LED_RGB_GREEN, false);
+                printf("[INFO] macro presence %" PRIi32 " %" PRIi32 "\n",
+                        ce_app_state.last_reported_event.range_bin,
+                        time_ms);
+                break;
+
+            case XENSIV_RADAR_PRESENCE_STATE_MICRO_PRESENCE:
+                cyhal_gpio_write(LED_RGB_RED, true);
+                cyhal_gpio_write(LED_RGB_GREEN, false);
+                printf("[INFO] micro presence %" PRIi32 " %" PRIi32 "\n",
+                        ce_app_state.last_reported_event.range_bin,
+                        time_ms);
+                break;
+
+            case XENSIV_RADAR_PRESENCE_STATE_ABSENCE:
+                cyhal_gpio_write(LED_RGB_RED, false);
+                cyhal_gpio_write(LED_RGB_GREEN, true);
+                printf("[INFO] absence %" PRIu32 "\n", time_ms);
+                break;
+
+            default:
+                printf("[MSG] ERROR: Unknown reported state in event handling\n");
+                break;
+        }
+
+        const cfloat32_t *macro_fft_buff = xensiv_radar_presence_get_macro_fft_buffer(handle);
+
+        printf("[MACRO_FFT] %lu",(unsigned long)time_ms);
+
+        for(int i = 0; i< MACRO_FFT_BUFF_SIZE; i++)
+        {
+            float zero[2] = { 0.f, 0.f};
+
+            printf("%lf ", arm_euclidean_distance_f32((float*)&macro_fft_buff[i], zero, 2));
+        }
+
+        printf("\n");
+
+        xensiv_radar_presence_get_max_macro(handle, &energy, &range_bin);
+        printf("[MACRO] %d %lf %lu\n", range_bin, energy, (unsigned long)time_ms);
+
+        xensiv_radar_presence_get_max_micro(handle, &energy, &range_bin);
+        printf("[MICRO] %d %lf %lu\n", range_bin, energy, (unsigned long) time_ms);
+
+        ce_app_state.bookmark_timestamp = time_ms;
+
+        print_job_locked = false;
+    }
 }
 
 
@@ -557,7 +733,7 @@ static void timer_callbak(TimerHandle_t xTimer)
 {
     (void)xTimer;
 
-#ifdef TARGET_CYSBSYSKIT_DEV_01
+#ifdef TARGET_APP_CYSBSYSKIT_DEV_01
     cyhal_gpio_toggle(CYBSP_USER_LED);
 #endif
 }

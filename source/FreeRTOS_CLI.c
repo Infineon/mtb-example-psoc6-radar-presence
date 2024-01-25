@@ -40,9 +40,9 @@ fixed address then set configAPPLICATION_PROVIDES_cOutputBuffer to 1 in
 FreeRTOSConfig.h, then declare an array with the following name and size in 
 one of the application files:
     char cOutputBuffer[ configCOMMAND_INT_MAX_OUTPUT_SIZE ];
-*/
+ */
 #ifndef configAPPLICATION_PROVIDES_cOutputBuffer
-    #define configAPPLICATION_PROVIDES_cOutputBuffer 0
+#define configAPPLICATION_PROVIDES_cOutputBuffer 0
 #endif
 
 typedef struct xCOMMAND_INPUT_LIST
@@ -93,9 +93,9 @@ configAPPLICATION_PROVIDES_cOutputBuffer is provided to allow the application
 writer to provide their own cOutputBuffer declaration in cases where the
 buffer needs to be placed at a fixed address (rather than by the linker). */
 #if( configAPPLICATION_PROVIDES_cOutputBuffer == 0 )
-    static char cOutputBuffer[ configCOMMAND_INT_MAX_OUTPUT_SIZE ];
+static char cOutputBuffer[ configCOMMAND_INT_MAX_OUTPUT_SIZE ];
 #else
-    extern char cOutputBuffer[ configCOMMAND_INT_MAX_OUTPUT_SIZE ];
+extern char cOutputBuffer[ configCOMMAND_INT_MAX_OUTPUT_SIZE ];
 #endif
 
 
@@ -103,9 +103,9 @@ buffer needs to be placed at a fixed address (rather than by the linker). */
 
 BaseType_t FreeRTOS_CLIRegisterCommand( const CLI_Command_Definition_t * const pxCommandToRegister )
 {
-static CLI_Definition_List_Item_t *pxLastCommandInList = &xRegisteredCommands;
-CLI_Definition_List_Item_t *pxNewListItem;
-BaseType_t xReturn = pdFAIL;
+    static CLI_Definition_List_Item_t *pxLastCommandInList = &xRegisteredCommands;
+    CLI_Definition_List_Item_t *pxNewListItem;
+    BaseType_t xReturn = pdFAIL;
 
     /* Check the parameter is not NULL. */
     configASSERT( pxCommandToRegister );
@@ -144,10 +144,10 @@ BaseType_t xReturn = pdFAIL;
 
 BaseType_t FreeRTOS_CLIProcessCommand( const char * const pcCommandInput, char * pcWriteBuffer, size_t xWriteBufferLen  )
 {
-static const CLI_Definition_List_Item_t *pxCommand = NULL;
-BaseType_t xReturn = pdTRUE;
-const char *pcRegisteredCommandString;
-size_t xCommandStringLength;
+    static const CLI_Definition_List_Item_t *pxCommand = NULL;
+    BaseType_t xReturn = pdTRUE;
+    const char *pcRegisteredCommandString;
+    size_t xCommandStringLength;
 
     /* Note:  This function is not re-entrant.  It must not be called from more
     thank one task. */
@@ -225,8 +225,8 @@ char *FreeRTOS_CLIGetOutputBuffer( void )
 
 const char *FreeRTOS_CLIGetParameter( const char *pcCommandString, UBaseType_t uxWantedParameter, BaseType_t *pxParameterStringLength )
 {
-UBaseType_t uxParametersFound = 0;
-const char *pcReturn = NULL;
+    UBaseType_t uxParametersFound = 0;
+    const char *pcReturn = NULL;
 
     *pxParameterStringLength = 0;
 
@@ -281,8 +281,8 @@ const char *pcReturn = NULL;
 
 static BaseType_t prvHelpCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
 {
-static const CLI_Definition_List_Item_t * pxCommand = NULL;
-BaseType_t xReturn;
+    static const CLI_Definition_List_Item_t * pxCommand = NULL;
+    BaseType_t xReturn;
 
     ( void ) pcCommandString;
 
@@ -314,8 +314,8 @@ BaseType_t xReturn;
 
 static int8_t prvGetNumberOfParameters( const char *pcCommandString )
 {
-int8_t cParameters = 0;
-BaseType_t xLastCharacterWasSpace = pdFALSE;
+    int8_t cParameters = 0;
+    BaseType_t xLastCharacterWasSpace = pdFALSE;
 
     /* Count the number of space delimited words in pcCommandString. */
     while( *pcCommandString != 0x00 )
