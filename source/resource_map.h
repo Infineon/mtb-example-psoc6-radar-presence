@@ -7,7 +7,7 @@
 *
 *
 *******************************************************************************
-* Copyright 2023, Cypress Semiconductor Corporation (an Infineon company) or
+* Copyright 2024, Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 *
 * This software, including source code, documentation and related
@@ -45,9 +45,8 @@
 
 #ifdef TARGET_APP_CYSBSYSKIT_DEV_01
 
-#define LED_RGB_RED                         CYBSP_GPIOA0
-#define LED_RGB_GREEN                       CYBSP_GPIOA1
-#define LED_RGB_BLUE                        CYBSP_GPIOA2
+#define USER_LED1                           CYBSP_GPIOA0
+#define USER_LED2                           CYBSP_GPIOA1
 
 #define PIN_XENSIV_BGT60TRXX_SPI_SCLK       CYBSP_SPI_CLK
 #define PIN_XENSIV_BGT60TRXX_SPI_MOSI       CYBSP_SPI_MOSI
@@ -61,9 +60,8 @@
 
 #ifdef TARGET_APP_KIT_BGT60TR13C_EMBEDD
 
-#define LED_RGB_RED                         CYBSP_LED_RGB_RED
-#define LED_RGB_GREEN                       CYBSP_LED_RGB_GREEN
-#define LED_RGB_BLUE                        CYBSP_LED_RGB_BLUE
+#define USER_LED1                           CYBSP_LED_RGB_RED
+#define USER_LED2                           CYBSP_LED_RGB_GREEN
 
 #define PIN_XENSIV_BGT60TRXX_SPI_SCLK       CYBSP_RADAR_SPI_CLK
 #define PIN_XENSIV_BGT60TRXX_SPI_MOSI       CYBSP_RADAR_SPI_MOSI
@@ -72,6 +70,21 @@
 #define PIN_XENSIV_BGT60TRXX_IRQ            CYBSP_RADAR_IRQ
 #define PIN_XENSIV_BGT60TRXX_RSTN           CYBSP_RADAR_RST
 #define PIN_XENSIV_BGT60TRXX_LDO_EN         CYBSP_RADAR_EN_LDO
+
+#endif
+
+#ifdef TARGET_APP_CY8CKIT_062S2_AI
+
+#define USER_LED1                           CYBSP_USER_LED1
+#define USER_LED2                           CYBSP_USER_LED2
+
+
+#define PIN_XENSIV_BGT60TRXX_SPI_SCLK       CYBSP_RSPI_CLK
+#define PIN_XENSIV_BGT60TRXX_SPI_MOSI       CYBSP_RSPI_MOSI
+#define PIN_XENSIV_BGT60TRXX_SPI_MISO       CYBSP_RSPI_MISO
+#define PIN_XENSIV_BGT60TRXX_SPI_CSN        CYBSP_RSPI_CS
+#define PIN_XENSIV_BGT60TRXX_IRQ            CYBSP_RSPI_IRQ
+#define PIN_XENSIV_BGT60TRXX_RSTN           CYBSP_RXRES_L
 
 #endif
 

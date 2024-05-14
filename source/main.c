@@ -3,24 +3,38 @@
 **
 ** Description: This is the main file for PSOC6 Radar Presence Code Example.
 **
-** ===========================================================================
-** Copyright (C) 2023 Infineon Technologies AG. All rights reserved.
-** ===========================================================================
-**
-** ===========================================================================
-** Infineon Technologies AG (INFINEON) is supplying this file for use
-** exclusively with Infineon's sensor products. This file can be freely
-** distributed within development tools and software supporting such
-** products.
-**
-** THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
-** OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
-** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
-** INFINEON SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR DIRECT, INDIRECT,
-** INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES, FOR ANY REASON
-** WHATSOEVER.
-** ===========================================================================
-*/
+*******************************************************************************
+* Copyright 2024, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
+*
+* This software, including source code, documentation and related
+* materials ("Software") is owned by Cypress Semiconductor Corporation
+* or one of its affiliates ("Cypress") and is protected by and subject to
+* worldwide patent protection (United States and foreign),
+* United States copyright laws and international treaty provisions.
+* Therefore, you may use this Software only as provided in the license
+* agreement accompanying the software package from which you
+* obtained this Software ("EULA").
+* If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
+* non-transferable license to copy, modify, and compile the Software
+* source code solely for use in connection with Cypress's
+* integrated circuit products.  Any reproduction, modification, translation,
+* compilation, or representation of this Software except as specified
+* above is prohibited without the express written permission of Cypress.
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
+* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
+* reserves the right to make changes to the Software without notice. Cypress
+* does not assume any liability arising out of the application or use of the
+* Software or any product or circuit described in the Software. Cypress does
+* not authorize its products for use in any products where a malfunction or
+* failure of the Cypress product may reasonably be expected to result in
+* significant property damage, injury or death ("High Risk Product"). By
+* including Cypress's product in a High Risk Product, the manufacturer
+* of such system or application assumes all risk of such use and in doing
+* so agrees to indemnify Cypress against all liability.
+*******************************************************************************/
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -452,16 +466,16 @@ void presence_detection_cb(xensiv_radar_presence_handle_t handle,
         switch (event->state)
         {
             case XENSIV_RADAR_PRESENCE_STATE_MACRO_PRESENCE:
-                cyhal_gpio_write(LED_RGB_RED, true);
-                cyhal_gpio_write(LED_RGB_GREEN, false);
+                cyhal_gpio_write(USER_LED1, true);
+                cyhal_gpio_write(USER_LED2, false);
                 printf("[INFO] macro presence %" PRIi32 " %" PRIi32 "\n",
                         event->range_bin,
                         event->timestamp);
                 break;
 
             case XENSIV_RADAR_PRESENCE_STATE_MICRO_PRESENCE:
-                cyhal_gpio_write(LED_RGB_RED, true);
-                cyhal_gpio_write(LED_RGB_GREEN, false);
+                cyhal_gpio_write(USER_LED1, true);
+                cyhal_gpio_write(USER_LED2, false);
                 printf("[INFO] micro presence %" PRIi32 " %" PRIi32 "\n",
                         event->range_bin,
                         event->timestamp);
@@ -469,8 +483,8 @@ void presence_detection_cb(xensiv_radar_presence_handle_t handle,
 
             case XENSIV_RADAR_PRESENCE_STATE_ABSENCE:
                 printf("[INFO] absence %" PRIu32 "\n", event->timestamp);
-                cyhal_gpio_write(LED_RGB_RED, false);
-                cyhal_gpio_write(LED_RGB_GREEN, true);
+                cyhal_gpio_write(USER_LED1, false);
+                cyhal_gpio_write(USER_LED2, true);
                 break;
 
             default:
@@ -528,6 +542,7 @@ static int32_t init_sensor(void)
         return -1;
     }
 
+#if defined (TARGET_APP_CYSBSYSKIT_DEV_01) || (TARGET_APP_KIT_BGT60TR13C_EMBEDD)
     /* Enable LDO */
     if (cyhal_gpio_init(PIN_XENSIV_BGT60TRXX_LDO_EN,
                         CYHAL_GPIO_DIR_OUTPUT,
@@ -537,6 +552,7 @@ static int32_t init_sensor(void)
         printf("[MSG] ERROR: LDO_EN cyhal_gpio_init failed\n");
         return -1;
     }
+#endif
 
     /* Wait LDO stable */
     (void)cyhal_system_delay_ms(5);
@@ -609,25 +625,16 @@ static void xensiv_bgt60trxx_interrupt_handler(void *args, cyhal_gpio_irq_event_
 *******************************************************************************/
 static int32_t init_leds(void)
 {
-
-    if(cyhal_gpio_init(LED_RGB_RED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
+    if(cyhal_gpio_init(USER_LED1, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
     {
-        printf("[MSG] ERROR: GPIO initialization for LED_RGB_RED failed\n");
+        printf("[MSG] ERROR: GPIO initialization for USER_LED1 failed\n");
         return -1;
     }
-
-    if( cyhal_gpio_init(LED_RGB_GREEN, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
+    if( cyhal_gpio_init(USER_LED2, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
     {
-        printf("[MSG] ERROR: GPIO initialization for LED_RGB_GREEN failed\n");
+        printf("[MSG] ERROR: GPIO initialization for USER_LED2 failed\n");
         return -1;
     }
-
-    if( cyhal_gpio_init(LED_RGB_BLUE, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, false)!= CY_RSLT_SUCCESS)
-    {
-        printf("[MSG] ERROR: GPIO initialization for LED_RGB_BLUE failed\n");
-        return -1;
-    }
-
     return 0;
 }
 
@@ -664,27 +671,26 @@ void process_verbose_cmd(xensiv_radar_presence_handle_t handle,
         switch (ce_app_state.last_reported_event.state)
         {
             case XENSIV_RADAR_PRESENCE_STATE_MACRO_PRESENCE:
-                cyhal_gpio_write(LED_RGB_RED, true);
-                cyhal_gpio_write(LED_RGB_GREEN, false);
+                cyhal_gpio_write(USER_LED1, true);
+                cyhal_gpio_write(USER_LED2, false);
                 printf("[INFO] macro presence %" PRIi32 " %" PRIi32 "\n",
                         ce_app_state.last_reported_event.range_bin,
                         time_ms);
                 break;
 
             case XENSIV_RADAR_PRESENCE_STATE_MICRO_PRESENCE:
-                cyhal_gpio_write(LED_RGB_RED, true);
-                cyhal_gpio_write(LED_RGB_GREEN, false);
+                cyhal_gpio_write(USER_LED1, true);
+                cyhal_gpio_write(USER_LED2, false);
                 printf("[INFO] micro presence %" PRIi32 " %" PRIi32 "\n",
                         ce_app_state.last_reported_event.range_bin,
                         time_ms);
                 break;
 
             case XENSIV_RADAR_PRESENCE_STATE_ABSENCE:
-                cyhal_gpio_write(LED_RGB_RED, false);
-                cyhal_gpio_write(LED_RGB_GREEN, true);
+                cyhal_gpio_write(USER_LED1, false);
+                cyhal_gpio_write(USER_LED2, true);
                 printf("[INFO] absence %" PRIu32 "\n", time_ms);
                 break;
-
             default:
                 printf("[MSG] ERROR: Unknown reported state in event handling\n");
                 break;

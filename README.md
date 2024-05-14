@@ -4,7 +4,7 @@ This code example demonstrates Infineon's radar presence solution to detect huma
 
 [View this README on GitHub.](https://github.com/Infineon/mtb-example-psoc6-radar-presence)
 
-[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyMzYwNTciLCJTcGVjIE51bWJlciI6IjAwMi0zNjA1NyIsIkRvYyBUaXRsZSI6IlBTb0MmdHJhZGU7IDYgTUNVOiBIdW1hbiBQcmVzZW5jZSBEZXRlY3Rpb24gd2l0aCBYRU5TSVbihKIgNjAtR0h6IFJhZGFyIiwicmlkIjoidXNtYW5tdWgiLCJEb2MgdmVyc2lvbiI6IjIuMC4wIiwiRG9jIExhbmd1YWdlIjoiRW5nbGlzaCIsIkRvYyBEaXZpc2lvbiI6Ik1DRCIsIkRvYyBCVSI6IlNCU1lTIiwiRG9jIEZhbWlseSI6IlBTT0MifQ==)
+[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyMzYwNTciLCJTcGVjIE51bWJlciI6IjAwMi0zNjA1NyIsIkRvYyBUaXRsZSI6IlBTb0MmdHJhZGU7IDYgTUNVOiBIdW1hbiBQcmVzZW5jZSBEZXRlY3Rpb24gd2l0aCBYRU5TSVbihKIgNjAtR0h6IFJhZGFyIiwicmlkIjoidXNtYW5tdWgiLCJEb2MgdmVyc2lvbiI6IjIuMS4wIiwiRG9jIExhbmd1YWdlIjoiRW5nbGlzaCIsIkRvYyBEaXZpc2lvbiI6Ik1DRCIsIkRvYyBCVSI6IlNCU1lTIiwiRG9jIEZhbWlseSI6IlBTT0MifQ==)
 
 
 ## Configuration on the fly
@@ -34,6 +34,7 @@ In this particular code example, we demonstrate how the human presence applicati
 
 - [Rapid IoT connect developer kit](https://github.com/Infineon/TARGET_CYSBSYSKIT-DEV-01) (`CYSBSYSKIT-DEV-01`) – Default value of `TARGET`
 - [Radar Embedded kit](https://github.com/Infineon/TARGET_KIT-BGT60TR13C-EMBEDD) (`KIT-BGT60TR13C-EMBEDD`)
+- [PSoC&trade; 6 AI Evaluation Kit](https://www.infineon.com/CY8CKIT-062S2-AI) (`CY8CKIT-062S2-AI`)
 
 
 
@@ -70,7 +71,15 @@ This code example requires the XENSIV™ BGT60TR13C Radar Wing Board as part of 
 
 2. Place KIT-BGT60TR13C-EMBEDD at a fixed location (for example, the corner of a room) to ensure optimal performance of the presence detection application.
 
+### For PSoC 6 AI Evaluation Kit
 
+1. Connect CY8CKIT-062S2-AI to the PC with USB cable.
+
+   **Figure 4. CY8CKIT-062S2-AI**
+
+   ![](images/ai-kit.jpg)
+
+2. Place CY8CKIT-062S2-AI at a fixed location (for example, the corner of a room) to ensure optimal performance of the presence detection application.
 
 ## Software setup
 
@@ -203,13 +212,13 @@ For a list of supported IDEs and more details, see the "Exporting to IDEs" secti
 
    1. Switch S3: Close pins 1 and 2, and open pins 3 and 4.
 
-      **Figure 4. Switch 3 position**
+      **Figure 5. Switch 3 position**
 
       ![](images/s3_pins.png)
 
    2. Switch S5: Close pins 1 and 2, and open pins 3 and 4.
 
-      **Figure 5. Switch 5 position**
+      **Figure 6. Switch 5 position**
 
       ![](images/s5_pins.png)
 
@@ -241,7 +250,7 @@ For a list of supported IDEs and more details, see the "Exporting to IDEs" secti
    [INFO] *Radar State* *Range Bin* *Time stamp*
    *Current presence state*, *Current radar setting*
 
-   **Figure 6. Terminal output choosing different configs**
+   **Figure 7. Terminal output choosing different configs**
 
    ![](images/terminal_multiple_configs.png)
 
@@ -269,8 +278,7 @@ For a list of supported IDEs and more details, see the "Exporting to IDEs" secti
 
 6. Confirm that the kit LED blinks at approximately 1 Hz.
 
-   The presence information is provided either as a macro or micro presence which can be seen through prints on the terminal. In addition, the onboard LED turns red which indicates that the radar detected a target. When the target leaves the detection zone, the terminal prints a absence message and LED turns green.
-
+   The presence information is provided either as a macro or micro presence which can be seen through prints on the terminal. In addition, the onboard LED turns red which indicates that the radar detected a target. When the target leaves the detection zone, the terminal prints a absence message and LED turns green. For CY8CKIT-062S2-AI, LED2 (red) will turn ON for absence message.
 
 ### Sensor information and LEDs
 
@@ -280,13 +288,21 @@ For a list of supported IDEs and more details, see the "Exporting to IDEs" secti
 
 2. The LED indicates different events with different colors as follows:
 
-   **Table 2. Events and LED indication**
+   **Table 2. Events and LED indication for CYSBSYSKIT-DEV-01 and KIT-BGT60TR13C-EMBEDD**
 
    | LED color  | Event type  | Description  |
    | ----------- | ----------- | -----    |
    | Red  | `XENSIV_RADAR_PRESENCE_STATE_MACRO_PRESENCE` | Presence event detected.
    | Red  | `XENSIV_RADAR_PRESENCE_STATE_MICRO_PRESENCE` | Presence event detected.
    | Green  | `XENSIV_RADAR_PRESENCE_STATE_ABSENCE ` | Absence event detected.
+
+   **Table 3. Events and LED indication for CY8CKIT-062S2-AI**
+
+   | LED color  | Event type  | Description  |
+   | ----------- | ----------- | -----    |
+   | Red (LED1)  | `XENSIV_RADAR_PRESENCE_STATE_MACRO_PRESENCE` | Presence event detected.
+   | Red (LED1)  | `XENSIV_RADAR_PRESENCE_STATE_MICRO_PRESENCE` | Presence event detected.
+   | Red (LED2)  | `XENSIV_RADAR_PRESENCE_STATE_ABSENCE ` | Absence event detected.
 
 
 ### Configuration parameters
@@ -297,13 +313,13 @@ You can configure the application parameters using the options provided on the t
 
 2. Type `help` and press **Enter** to see a list of configurable parameters as shown in the Figure 7.
 
-    **Figure 7. Configuration mode**
+    **Figure 8. Configuration mode**
 
     ![](images/configuration-mode.png)
 
    The following table lists the configurable parameters with valid values:
 
-   **Table 3. Presence algorithm configuration parameters**
+   **Table 4. Presence algorithm configuration parameters**
 
    | Key | Default value  | Valid Values  |
    | ----------- | ----------- | -----    |
@@ -324,7 +340,7 @@ You can configure the application parameters using the options provided on the t
 
    **Note:** Macro and micro threshold parameters can be adjusted to achieve different levels of sensitivity. The following table summarizes three different levels. For example, high sensitivity means that the solution is more sensitive to smaller movements. You can set any threshold values based on your use case requirement.
 
-   **Table 4. Sensitivity levels with corresponding threshold setting**
+   **Table 5. Sensitivity levels with corresponding threshold setting**
 
    | Sensitivity|Macro_threshold_value |Micro_threshold_value|
    | ----------- | ----------- | -----
@@ -363,7 +379,7 @@ You can debug the example to step through the code. In the IDE, use the **\<Appl
 
 This application uses a modular approach to build a presence application combining a radar driver and presence algorithm library and the following components:
 
-**Figure 8. Application overview**
+**Figure 9. Application overview**
 
 ![](images/system-overview.png)
 
@@ -371,7 +387,7 @@ The radar configuration parameters are generated from a PC tool and saved in *ra
 
 After initialization, the application runs in an event-driven way. The radar interrupt is used to notify the MCU which retrieves the raw data into a software buffer and then triggers the main task to normalize and feed the data to the presence library.
 
-**Figure 9. Application execution**
+**Figure 10. Application execution**
 
 ![](images/system-flow.png)
 
@@ -471,7 +487,7 @@ typedef enum
 
 ## Optimizer API
 
-**Table 5. API functions**
+**Table 6. API functions**
 
 API function | Description
 -------------|------------
@@ -481,7 +497,7 @@ API function | Description
 `radar_config_get_current_optimization` | Returns the current chosen optimization mode: low or high frame rate.
 
 
-**Table 6. Application resources**
+**Table 7. Application resources**
 
  Resource  |  Alias/object     |    Purpose
  :-------- | :-------------    | :------------
@@ -528,6 +544,7 @@ Document title: *CE236057* – *PSoC&trade; 6 MCU : Human presence detection wit
  0.5.1   | New code example
  1.0.0   | Major update to support ModusToolbox&trade; v3.0 <br> CE will not be backward compatible with previous versions of ModusToolbox&trade;
  2.0.0   | Added support to demonstrate switching of radar configurations on the fly
+ 2.1.0   | Added support for CY8CKIT-062S2-AI
 <br>
 
 
